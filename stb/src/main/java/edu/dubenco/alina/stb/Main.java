@@ -18,6 +18,9 @@ import javax.swing.JTextArea;
 
 import org.json.JSONObject;
 
+/**
+* Main STB class
+**/
 public class Main extends JFrame {
 
 	private static final long serialVersionUID = 1L;
