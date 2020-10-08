@@ -14,9 +14,12 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 
 import org.json.JSONObject;
+
+import edu.dubenco.alina.stb.gui.CustomItemModel;
 
 /**
 * Main STB class
@@ -30,9 +33,11 @@ public class Main extends JFrame {
 	private JButton btnSave;
 	private JPanel pnlData;
 	private JScrollPane scrl;
+	private CustomItemModel itemModel;
+	private JTable itemsTable;
 	private JTextArea txtArea;
 	
-	private JSONObject currentPolicy;
+	private Policy currentPolicy;
 	
 
 	public Main() {
@@ -78,9 +83,12 @@ public class Main extends JFrame {
 		pnlData.setLayout(null);
 		this.add(pnlData);
 
-		txtArea = new JTextArea();
+		txtArea = new JTextArea(); //TODO: remove
+		
+		itemModel = new CustomItemModel(null);
+		itemsTable = new JTable(itemModel);
 
-		scrl = new JScrollPane(txtArea, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		scrl = new JScrollPane(itemsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrl.setBounds(0, 0, 1400, 700);
 		pnlData.add(scrl);
 
@@ -93,8 +101,10 @@ public class Main extends JFrame {
 		if(fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			String fName = fc.getSelectedFile().getAbsolutePath();
 			try {
-				currentPolicy = new AuditParser().parseFile(fName);
-				txtArea.setText(currentPolicy.toString(4));
+				JSONObject json = new AuditParser().parseFile(fName);
+				currentPolicy = new Policy(json);
+				itemModel.setPolicy(currentPolicy);
+				txtArea.setText(currentPolicy.getJson().toString(4));
 				txtArea.setCaretPosition(0);
 			} catch (Exception e1) {
 				e1.printStackTrace();
@@ -108,8 +118,10 @@ public class Main extends JFrame {
 			try {
 				byte[] bytes = Files.readAllBytes(Paths.get(fName));
 				String content = new String(bytes);
-				currentPolicy = new JSONObject(content);
-				txtArea.setText(currentPolicy.toString(4));
+				JSONObject  json = new JSONObject(content);
+				currentPolicy = new Policy(json);
+				itemModel.setPolicy(currentPolicy);
+				txtArea.setText(currentPolicy.getJson().toString(4));
 				txtArea.setCaretPosition(0);
 			} catch (Exception e1) {
 				e1.printStackTrace();
