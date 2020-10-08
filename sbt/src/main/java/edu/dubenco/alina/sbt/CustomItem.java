@@ -1,4 +1,4 @@
-package edu.dubenco.alina.stb;
+package edu.dubenco.alina.sbt;
 
 import org.json.JSONObject;
 

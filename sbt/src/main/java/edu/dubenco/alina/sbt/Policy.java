@@ -1,4 +1,4 @@
-package edu.dubenco.alina.stb;
+package edu.dubenco.alina.sbt;
 
 import java.util.ArrayList;
 import java.util.List;
