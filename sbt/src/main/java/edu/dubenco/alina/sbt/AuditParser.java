@@ -184,10 +184,10 @@ public class AuditParser {
 				String op = content.substring(0, 2);
 				content = content.substring(2).trim();
 				parseValue(content, pr);
-				if(!value.endsWith("]")) {
-					value = "[" + value + "]";
+				if(!value.endsWith("\"")) {
+					value = "\"" + value + "\"";
 				}
-				value = value + " " + op + " [" + pr.val + "]";
+				value = value + " " + op + " \"" + pr.val + "\"";
 			} else if(cc != ':') {
 				if(!name.isEmpty()) {
 					ret.add(new PropertyValue(name, value));

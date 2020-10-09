@@ -24,12 +24,14 @@ public class CustomItem {
 	private String regKey;
 	private String lockoutPolicy;
 	
-	private static List<String> ALL_KEYS = Arrays.asList("type", "description", "info", "solution", "see_also", "value_type", 
-														  "value_data", "right_type", "reg_key", "reg_item", "reg_ignore_hku_users", "reg_option", "lockout_policy", 
-														  "audit_policy_subcategory", "key_item", "password_policy", 
+	private static List<String> ALL_KEYS = Arrays.asList("type", "description", "info", "solution", "see_also", "value_type", "value_data", 
+                                                         "right_type", "reg_key", "reg_item", "reg_ignore_hku_users", "reg_option", 
+                                                         "lockout_policy", "audit_policy_subcategory", "key_item", "password_policy", 
 														  "wmi_namespace", "wmi_request", "wmi_attribute", "wmi_key", "reference");
 	
-	private static List<String> UNQUOTED_KEYS = Arrays.asList("type", "value_type", "right_type", "reg_option");
+	private static List<String> UNQUOTED_KEYS = Arrays.asList("type", "value_type", "right_type", "reg_option", "lockout_policy", "password_policy", "wmi_request");
+	
+	private static List<String> UNQUOTED_VALUE_TYPES = Arrays.asList("USER_RIGHT", "TIME_MINUTE");
 	
 	public CustomItem(JSONObject json) {
 		setJson(json);
@@ -217,16 +219,39 @@ public class CustomItem {
 
 	private void addKeyAndValue(String key, int maxKeyLength, StringBuilder sb) {
 		String paddedKey = padKey(key, maxKeyLength);
-		sb.append("      ").append(paddedKey).append(" : ");
-		if(!UNQUOTED_KEYS.contains(key)) {
-			sb.append("\"");
-		}
+		String valueType = getValueType();
 		String value = this.getJson().getString(key).replace("\\n", "\n");
-		sb.append(value);
-		if(!UNQUOTED_KEYS.contains(key)) {
+		
+		sb.append("      ").append(paddedKey).append(" : ");
+		
+		if(shouldAddQuotes(key, valueType, value)) {
 			sb.append("\"");
 		}
+		
+		if(key.equalsIgnoreCase("wmi_request")) {
+			sb.append("'");
+		}
+		
+		sb.append(value);
+		
+		if(shouldAddQuotes(key, valueType, value)) {
+			sb.append("\"");
+		}
+
+		if(key.equalsIgnoreCase("wmi_request")) {
+			sb.append("'");
+		}
+		
 		sb.append("\n");
+	}
+
+	private boolean shouldAddQuotes(String key, String valueType, String value) {
+		return (!"value_data".equalsIgnoreCase(key) && !UNQUOTED_KEYS.contains(key.toLowerCase()))
+				|| ("value_data".equalsIgnoreCase(key)
+						&& !(valueData.contains("[") && !valueData.contains(" "))
+						&& (!UNQUOTED_VALUE_TYPES.contains(valueType.toUpperCase())
+								|| (value.contains(" ") && !value.contains("\""))
+								|| ("USER_RIGHT".equalsIgnoreCase(valueType) && !value.contains("\""))));
 	}
 	
 	private int getMaxKeyLength() {
