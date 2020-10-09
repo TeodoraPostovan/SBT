@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -20,6 +22,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 
 import org.json.JSONArray;
@@ -43,9 +46,10 @@ public class Main extends JFrame {
 	private JButton btnExport;
 	private JButton btnSelectAll;
 	private JButton btnUnselectAll;
+	private JButton btnAudit;
 	private JTextField txtFilter;
 	private JScrollPane scrl;
-	private CustomItemModel itemModel;
+	private CustomItemModel itemsModel;
 	private JTable itemsTable;
 	private String template = "MSCT_Windows_10_1909_1.0.0.audit";
 	
@@ -118,7 +122,7 @@ public class Main extends JFrame {
 		txtFilter.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyTyped(KeyEvent e) {
-				itemModel.filter(txtFilter.getText());
+				itemsModel.filter(txtFilter.getText());
 			}
 		});
 		
@@ -140,18 +144,31 @@ public class Main extends JFrame {
 			}
 		});
 		
-		itemModel = new CustomItemModel(null);
-		itemsTable = new JTable(itemModel);
+		toolBar.addSeparator();
+		btnAudit = new JButton("Audit");
+		toolBar.add(btnAudit);
+		btnAudit.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				audit();
+			}
+		});
+		
+		
+		itemsModel = new CustomItemModel(null);
+		itemsTable = new JTable(itemsModel);
 
 		scrl = new JScrollPane(itemsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrl.setBounds(0, 0, 1400, 700);
 		this.add(scrl, BorderLayout.CENTER);
 
 		itemsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		itemsTable.getColumn("selected").setPreferredWidth(60);
+		itemsTable.getColumn("Select").setPreferredWidth(50);
+		itemsTable.getColumn("Status").setPreferredWidth(60);
+		itemsTable.getColumn("System Value").setPreferredWidth(150);
 		itemsTable.getColumn("description").setPreferredWidth(500);
-		itemsTable.getColumn("solution").setPreferredWidth(500);
-		itemsTable.getColumn("info").setPreferredWidth(500);
+		itemsTable.getColumn("solution").setPreferredWidth(700);
+		itemsTable.getColumn("info").setPreferredWidth(700);
 		itemsTable.getColumn("see_also").setPreferredWidth(250);
 		itemsTable.getColumn("type").setPreferredWidth(150);
 		itemsTable.getColumn("value_type").setPreferredWidth(150);
@@ -174,7 +191,7 @@ public class Main extends JFrame {
 			try {
 				JSONObject json = new AuditParser().parseFile(fName);
 				currentPolicy = new Policy(json);
-				itemModel.setPolicy(currentPolicy);
+				itemsModel.setPolicy(currentPolicy);
 			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
@@ -196,7 +213,7 @@ public class Main extends JFrame {
 			String content = new String(bytes);
 			JSONObject  json = new JSONObject(content);
 			currentPolicy = new Policy(json);
-			itemModel.setPolicy(currentPolicy);
+			itemsModel.setPolicy(currentPolicy);
 		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
@@ -270,10 +287,29 @@ public class Main extends JFrame {
 	}
 	
 	private void toggleSelectAll(boolean select) {
-		for(int i = 0; i < itemModel.getRowCount(); i++) {
-			itemModel.setValueAt(select, i, 0);
+		for(int i = 0; i < itemsModel.getRowCount(); i++) {
+			itemsModel.setValueAt(select, i, CustomItemModel.COL_IDX_SELECTED);
 		}
 		itemsTable.repaint();
+	}
+	
+	private void audit() {
+		ExecutorService svc = Executors.newFixedThreadPool(1);
+		for(int i = 0; i < itemsModel.getRowCount(); i++) {
+			CustomItem item = itemsModel.getItem(i);
+			final int idx = i;
+			if(item.isSelected()) {
+				svc.execute(new Runnable() {
+					@Override
+					public void run() {
+						itemsModel.setStatus(idx, "checking");
+						ExecutionResult result = Executer.check(item);
+						itemsModel.setStatus(idx, result.getStatus());
+						itemsModel.setSystemValue(idx, result.getValue());
+					}
+				});
+			}
+		}
 	}
 	
 	private FileFilter jsonFileFilter = new FileFilter() {

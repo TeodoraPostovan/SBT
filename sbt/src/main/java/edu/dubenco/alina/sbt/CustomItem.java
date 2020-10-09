@@ -9,6 +9,8 @@ import org.json.JSONObject;
 
 public class CustomItem {
 	private boolean selected;
+	private String status;
+	private String systemValue;
 	private JSONObject json;
 	private String reference;
 	private String valueType;
@@ -43,6 +45,30 @@ public class CustomItem {
 	
 	public void setSelected(boolean selected) {
 		this.selected = selected;
+	}
+	
+	public String getStatus() {
+		if(status != null) {
+			return status;
+		} else {
+			return "";
+		}
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public String getSystemValue() {
+		if(systemValue != null) {
+			return systemValue;
+		} else {
+			return "";
+		}
+	}
+
+	public void setSystemValue(String systemValue) {
+		this.systemValue = systemValue;
 	}
 	
 	public JSONObject getJson() {

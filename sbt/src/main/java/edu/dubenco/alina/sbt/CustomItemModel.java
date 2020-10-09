@@ -9,11 +9,17 @@ public class CustomItemModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = 1L;
 	
+	public static int COL_IDX_SELECTED = 0;
+	public static int COL_IDX_STATUS = 1;
+	public static int COL_IDX_SYSTEM_VALUE = 2;
+	
+	
 	private Policy policy;
 	private List<CustomItem> items;
 	
-	private String[] columns = new String[] {"selected", "description", "solution", "info", "see_also", "type", "value_type", 
-			                                 "value_data", "right_type", "reg_item", "reg_key", "reference"};
+	private String[] columns = new String[] {"Select", "Status", "System Value", 
+			                                 "value_data", "description", "solution", "info", "see_also", "type", "value_type", 
+			                                 "right_type", "reg_item", "reg_key", "reference"};
 	
 	public CustomItemModel(Policy policy) {
 		setPolicy(policy);
@@ -36,9 +42,14 @@ public class CustomItemModel extends AbstractTableModel {
 		}
 		
 		CustomItem item = this.items.get(rowIndex);
-		if(columnIndex == 0) {
+		switch(columnIndex) {
+		case 0:
 			return item.isSelected();
-		} else {
+		case 1:
+			return item.getStatus();
+		case 2:
+			return item.getSystemValue();
+		default:
 			String column = columns[columnIndex];
 			if(item.getJson().has(column)){
 				String strVal = item.getJson().getString(column);
@@ -47,6 +58,10 @@ public class CustomItemModel extends AbstractTableModel {
 				return null;
 			}
 		}
+	}
+	
+	public CustomItem getItem(int rowIndex) {
+		return this.items.get(rowIndex);
 	}
 
 	public Policy getPolicy() {
@@ -101,4 +116,15 @@ public class CustomItemModel extends AbstractTableModel {
 		fireTableDataChanged();
 	}
 	
+	public void setStatus(int rowIndex, String status) {
+		CustomItem item = this.items.get(rowIndex);
+		item.setStatus(status);
+		fireTableCellUpdated(rowIndex, COL_IDX_STATUS);
+	}
+
+	public void setSystemValue(int rowIndex, String value) {
+		CustomItem item = this.items.get(rowIndex);
+		item.setSystemValue(value);
+		fireTableCellUpdated(rowIndex, COL_IDX_SYSTEM_VALUE);
+	}
 }
