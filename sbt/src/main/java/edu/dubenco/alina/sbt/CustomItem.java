@@ -1,5 +1,10 @@
 package edu.dubenco.alina.sbt;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+
 import org.json.JSONObject;
 
 public class CustomItem {
@@ -19,6 +24,13 @@ public class CustomItem {
 	private String regKey;
 	private String lockoutPolicy;
 	
+	private static List<String> ALL_KEYS = Arrays.asList("type", "description", "info", "solution", "see_also", "value_type", 
+														  "value_data", "right_type", "reg_key", "reg_item", "reg_ignore_hku_users", "reg_option", "lockout_policy", 
+														  "audit_policy_subcategory", "key_item", "password_policy", 
+														  "wmi_namespace", "wmi_request", "wmi_attribute", "wmi_key", "reference");
+	
+	private static List<String> UNQUOTED_KEYS = Arrays.asList("type", "value_type", "right_type", "reg_option");
+	
 	public CustomItem(JSONObject json) {
 		setJson(json);
 	}
@@ -37,6 +49,7 @@ public class CustomItem {
 	
 	public void setJson(JSONObject json) {
 		this.json = json;
+		setSelected(true);
 		if(json.has("reference")) {
 			this.setReference(json.getString("reference"));
 		}
@@ -180,5 +193,58 @@ public class CustomItem {
 	
 	public void setLockoutPolicy(String lockoutPolicy) {
 		this.lockoutPolicy = lockoutPolicy;
+	}
+	
+	public String toAuditFormat() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("    <custom_item>\n");
+		int maxKeyLength = getMaxKeyLength();
+		for(String key : ALL_KEYS) {
+			if(this.getJson().has(key)) {
+				addKeyAndValue(key, maxKeyLength, sb);
+			}
+		}
+		Iterator<String> iter = this.getJson().keys();
+		while(iter.hasNext()) {
+			String key = iter.next();
+			if(!ALL_KEYS.contains(key)) {
+				addKeyAndValue(key, maxKeyLength, sb);
+			}
+		}
+		sb.append("    </custom_item>\n");
+		return sb.toString();
+	}
+
+	private void addKeyAndValue(String key, int maxKeyLength, StringBuilder sb) {
+		String paddedKey = padKey(key, maxKeyLength);
+		sb.append("      ").append(paddedKey).append(" : ");
+		if(!UNQUOTED_KEYS.contains(key)) {
+			sb.append("\"");
+		}
+		String value = this.getJson().getString(key).replace("\\n", "\n");
+		sb.append(value);
+		if(!UNQUOTED_KEYS.contains(key)) {
+			sb.append("\"");
+		}
+		sb.append("\n");
+	}
+	
+	private int getMaxKeyLength() {
+		Optional<String> maxKey = this.getJson().keySet().stream().max((k1, k2) -> k1.length() - k2.length());
+		return maxKey.orElse("").length();
+	}
+	
+	private String padKey(String key, int keyLength) {
+		int length = key.length();
+		if(length < keyLength) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(key);
+			for(int i = length; i < keyLength; i++) {
+				sb.append(" ");
+			}
+			return sb.toString();
+		} else {
+			return key;
+		}
 	}
 }

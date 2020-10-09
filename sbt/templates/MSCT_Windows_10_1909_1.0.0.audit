@@ -1,0 +1,74 @@
+#
+# This script is Copyright (C) 2004-2020 and is owned by Tenable, Inc. or an Affiliate thereof.
+#
+# This script is released under the Tenable Subscription License and
+# may not be used from within scripts released under another license
+# without authorization from Tenable, Inc.
+#
+# See the following licenses for details:
+#
+# http://static.tenable.com/prod_docs/Nessus_6_SLA_and_Subscription_Agreement.pdf
+#
+# @PROFESSIONALFEED@
+# $Revision: 1.0 $
+# $Date: 2020/02/12 $
+#
+# description : This document implements the security configuration as recommended by the
+#               MSCT Windows 10 Version 1909 and Windows Server Version 1909 Security Baseline
+#
+#<ui_metadata>
+#<display_name>MSCT Windows 10 1909 v1.0.0</display_name>
+#<spec>
+#  <type>MSCT</type>
+#  <name>MSCT Windows 10 1909</name>
+#  <version>1.0.0</version>
+#  <link>https://techcommunity.microsoft.com/t5/microsoft-security-baselines/security-baseline-final-for-windows-10-v1909-and-windows-server/ba-p/1023093</link>
+#</spec>
+#<labels>msct,microsoft,windows,windows_10</labels>
+#</ui_metadata>
+
+<check_type:"Windows" version:"2">
+<group_policy:"Microsoft Security Compliance Toolkit">
+
+<if>
+  <condition type:"AND">
+    <custom_item>
+      type        : REGISTRY_SETTING
+      description : "Windows 10 is installed"
+      value_type  : POLICY_TEXT
+      value_data  : "^[Ww][Ii][Nn][Dd][Oo][Ww][Ss] 10.+$"
+      reg_key     : "HKLM\Software\Microsoft\Windows Nt\Currentversion"
+      reg_item    : "ProductName"
+      check_type  : CHECK_REGEX
+    </custom_item>
+
+    <custom_item>
+      type        : REGISTRY_SETTING
+      description : "Check Windows Release"
+      value_type  : POLICY_TEXT
+      value_data  : "1909"
+      reg_key     : "HKLM\Software\Microsoft\Windows Nt\Currentversion"
+      reg_item    : "ReleaseId"
+      check_type  : CHECK_REGEX
+    </custom_item>
+  </condition>
+
+  <then>
+    <report type:"PASSED">
+      description : "MSCT_Windows_10_1909_v1.0.0.audit from MSCT Windows 10 Version 1909 and Windows Server Version 1909 Security Baseline"
+    </report>
+	
+-={SBT_CUSTOM_ITEMS}=-
+	
+  </then>
+
+  <else>
+    <report type:"WARNING">
+      description : "MSCT_Windows_10_1909_v1.0.0.audit from MSCT Windows 10 Version 1909 and Windows Server Version 1909 Security Baseline"
+      info        : "NOTE: Nessus has not identified that the chosen audit applies to the target device."
+    </report>
+  </else>
+</if>
+
+</group_policy>
+</check_type>

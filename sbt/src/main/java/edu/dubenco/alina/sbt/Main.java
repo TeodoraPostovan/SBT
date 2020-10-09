@@ -5,31 +5,34 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
+import javax.swing.filechooser.FileFilter;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
-* Main STB class
+* Main SBT class
 **/
 public class Main extends JFrame {
 
 	private static final long serialVersionUID = 1L;
+	private static final String INTERNAL_POLICY_FILE = "policy.json";
+	private static final String SBT_CUSTOM_ITEMS = "-={SBT_CUSTOM_ITEMS}=-";
 
 	private final JFileChooser fc = new JFileChooser();
 	private JToolBar toolBar;
@@ -44,6 +47,7 @@ public class Main extends JFrame {
 	private JScrollPane scrl;
 	private CustomItemModel itemModel;
 	private JTable itemsTable;
+	private String template = "MSCT_Windows_10_1909_1.0.0.audit";
 	
 	private Policy currentPolicy;
 	
@@ -83,7 +87,7 @@ public class Main extends JFrame {
 		btnSave.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				saveToFile();
+				save();
 			}
 		});
 		
@@ -92,7 +96,7 @@ public class Main extends JFrame {
 		btnSaveAs.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				saveToFile();
+				saveAs();
 			}
 		});
 		
@@ -101,7 +105,7 @@ public class Main extends JFrame {
 		btnExport.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				saveToFile();
+				export();
 			}
 		});
 		
@@ -156,9 +160,15 @@ public class Main extends JFrame {
 		itemsTable.getColumn("reg_item").setPreferredWidth(150);
 		itemsTable.getColumn("reg_key").setPreferredWidth(500);
 		itemsTable.getColumn("reference").setPreferredWidth(500);
+		
+		if(new File(INTERNAL_POLICY_FILE).exists()) {
+			readFromJsonFile(INTERNAL_POLICY_FILE);
+		}
 	}
 	
 	private void loadFromFile() {
+		fc.setDialogTitle("Load from Security Policy file");
+		fc.setFileFilter(auditFileFilter);
 		if(fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			String fName = fc.getSelectedFile().getAbsolutePath();
 			try {
@@ -172,30 +182,90 @@ public class Main extends JFrame {
 	}
 	
 	private void loadFromJsonFile() {
+		fc.setDialogTitle("Load from JSON file");
+		fc.setFileFilter(jsonFileFilter);
 		if(fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			String fName = fc.getSelectedFile().getAbsolutePath();
-			try {
-				byte[] bytes = Files.readAllBytes(Paths.get(fName));
-				String content = new String(bytes);
-				JSONObject  json = new JSONObject(content);
-				currentPolicy = new Policy(json);
-				itemModel.setPolicy(currentPolicy);
-			} catch (Exception e1) {
-				e1.printStackTrace();
-			}
+			readFromJsonFile(fName);
 		}
 	}
 
-	private void saveToFile() {
+	private void readFromJsonFile(String fName) {
+		try {
+			byte[] bytes = Files.readAllBytes(Paths.get(fName));
+			String content = new String(bytes);
+			JSONObject  json = new JSONObject(content);
+			currentPolicy = new Policy(json);
+			itemModel.setPolicy(currentPolicy);
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+	}
+
+	private void saveAs() {
+		fc.setDialogTitle("Asve As JSON file");
+		fc.setFileFilter(jsonFileFilter);
 		if(fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
 			String fName = fc.getSelectedFile().getAbsolutePath();
-			List<String> contents = new ArrayList<String>();
-			//TODO: populate contents
-			try {
-				Files.write(Paths.get(fName), contents);
-			} catch (IOException e) {
-				e.printStackTrace();
+			writeToJsonFile(fName);
+		}
+	}
+
+	private void save() {
+		writeToJsonFile(INTERNAL_POLICY_FILE);
+		readFromJsonFile(INTERNAL_POLICY_FILE);
+	}
+
+	private void export() {
+		File templateFile = new File("templates", template);
+		if(!templateFile.exists()) {
+			String errorMessage = "The template file is missing: " + templateFile.getAbsolutePath();
+			JOptionPane.showMessageDialog(this, errorMessage, "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		fc.setDialogTitle("Export As Security Policy file");
+		fc.setFileFilter(auditFileFilter);
+		if(fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+			String fName = fc.getSelectedFile().getAbsolutePath();
+			writeToAuditFile(fName, templateFile);
+		}
+	}
+	
+	private void writeToAuditFile(String fName, File templateFile) {
+		try {
+			byte[] bytes = Files.readAllBytes(templateFile.toPath());
+			String content = new String(bytes);
+			StringBuilder sb = new StringBuilder();
+			for(CustomItem item : currentPolicy.getItems()) {
+				if(item.isSelected()) {
+					sb.append(item.toAuditFormat()).append("\n");
+				}
 			}
+			content = content.replace(SBT_CUSTOM_ITEMS, sb.toString());
+	
+			Files.write(Paths.get(fName), Arrays.asList(content));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void writeToJsonFile(String fName) {
+		JSONObject json = new JSONObject(currentPolicy.getJson().toString());
+		JSONArray customItemsJson = json.getJSONObject("check_type").getJSONObject("group_policy").getJSONObject("if").getJSONObject("then").getJSONArray("custom_item");
+		
+		while(!customItemsJson.isEmpty()) {
+			customItemsJson.remove(0);
+		}
+		for(CustomItem item : currentPolicy.getItems()) {
+			if(item.isSelected()) {
+				customItemsJson.put(item.getJson());
+			}
+		}
+		
+		try {
+			Files.write(Paths.get(fName), Arrays.asList(json.toString(2)));
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -205,6 +275,30 @@ public class Main extends JFrame {
 		}
 		itemsTable.repaint();
 	}
+	
+	private FileFilter jsonFileFilter = new FileFilter() {
+		@Override
+		public String getDescription() {
+			return "JSON file (.json)";
+		}
+		
+		@Override
+		public boolean accept(File f) {
+			return f.getName().toLowerCase().endsWith(".json");
+		}
+	};
+	
+	private FileFilter auditFileFilter = new FileFilter() {
+		@Override
+		public String getDescription() {
+			return "Security Policy file (.audit)";
+		}
+		
+		@Override
+		public boolean accept(File f) {
+			return f.getName().toLowerCase().endsWith(".audit");
+		}
+	};
 	
 	public static void main(String[] args) {
 		new Main().setVisible(true);
