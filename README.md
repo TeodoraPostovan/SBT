@@ -1,5 +1,13 @@
 # SBT - Security Benchmarking Tool
 
+## Note
+The "master" branch contains the latest version of the tool.
+There is a separate branch for each of the previous labs:
+- lab1
+- lab2
+- lab3
+- lab4
+
 ## Introduction
 A simple implementation of a Security Benchmarking Tool for Lab3.
 This version provides the following functionality:
