@@ -8,9 +8,9 @@ This version provides the following functionality:
 4. Load the Security Polici from a previousely saved JSON file.
 
 ## Technologies
-The tool is developed using Java 8.
-The GUI is implemented using java SWING classes.
-It the org.json.json library (https://github.com/stleary/JSON-java).
+- The tool is developed using Java 8.
+- The GUI is implemented using java SWING classes.
+- It uses the org.json.json library (https://github.com/stleary/JSON-java).
 
 ## Build and Launch
 To run the tool you need to have Java 8 installed.
