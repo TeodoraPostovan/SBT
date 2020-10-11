@@ -5,8 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 
 public class WindowsRegistry
 {
@@ -22,19 +20,55 @@ public class WindowsRegistry
 
         importer.waitFor();
     }
+    
+    public static boolean exists(String keyPath, String keyName) throws IOException, InterruptedException {
+    	StringBuilder sb = new StringBuilder();
+    	sb.append("reg query \"").append(keyPath).append("\"");
+    	if(keyName != null && !keyName.trim().isEmpty()) {
+    		sb.append(" /v \"").append(keyName).append("\"");
+    	}
+    	
+    	Process proc = Runtime.getRuntime().exec(sb.toString());
+        int retVal = proc.waitFor();
+        if(retVal == 0) {
+        	return true;
+        } else {
+            String readLine;
+            StringBuffer errBuffer = new StringBuffer();
+        	try(BufferedReader errRdr = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
+                while ((readLine = errRdr.readLine()) != null)
+                {
+                    errBuffer.append(readLine);
+                }
+        	}
+        	System.out.println(errBuffer.toString());
+        	return false;
+        }
+    }
 
     public static void overwriteValue(String keyPath, String keyName, String keyType,
             String keyValue) throws IOException, InterruptedException
     {
-        Process overwriter = Runtime.getRuntime().exec(
-                "reg add " + keyPath + " /t " + keyType + " /v \"" + keyName + "\" /d "
-                        + keyValue + " /f");
+    	StringBuilder sb = new StringBuilder();
+    	sb.append("reg add \"").append(keyPath).append("\"");
+    	if(keyName != null) {
+    		sb.append(" /v \"").append(keyName).append("\"");
+    		if(keyValue != null) {
+    			sb.append(" /d \"").append(keyValue).append("\"");
+    			if(keyType != null) {
+    				sb.append(" /t ").append(keyType);
+    			}
+    		}
+    	}
+    	sb.append(" /f");
+        
+    	Process proc = Runtime.getRuntime().exec(sb.toString());
 
-        int retVal = overwriter.waitFor();
+        int retVal = proc.waitFor();
         if(retVal != 0) {
             String readLine;
             StringBuffer errBuffer = new StringBuffer();
-        	try(BufferedReader errRdr = new BufferedReader(new InputStreamReader(overwriter.getErrorStream()))) {
+        	try(BufferedReader errRdr = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
                 while ((readLine = errRdr.readLine()) != null)
                 {
                     errBuffer.append(readLine);
@@ -67,6 +101,29 @@ public class WindowsRegistry
         keyReader.waitFor();
 
         return formatValue(outputComponents[outputComponents.length - 1], keyType);
+    }
+    
+    public static void delete(String keyPath, String keyName) throws IOException, InterruptedException {
+    	StringBuilder sb = new StringBuilder();
+    	sb.append("reg delete \"").append(keyPath).append("\"");
+    	if(keyName != null && !keyName.trim().isEmpty()) {
+    		sb.append(" /v \"").append(keyName).append("\"");
+    	}
+    	sb.append(" /f");
+    	
+    	Process proc = Runtime.getRuntime().exec(sb.toString());
+        int retVal = proc.waitFor();
+        if(retVal != 0) {
+            String readLine;
+            StringBuffer errBuffer = new StringBuffer();
+        	try(BufferedReader errRdr = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
+                while ((readLine = errRdr.readLine()) != null)
+                {
+                    errBuffer.append(readLine);
+                }
+        	}
+        	throw new IOException(errBuffer.toString());
+        }
     }
     
     public static String formatValue(String value, String type) {

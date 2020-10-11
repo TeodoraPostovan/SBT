@@ -22,7 +22,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
-import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 
 import org.json.JSONArray;
@@ -47,6 +46,8 @@ public class Main extends JFrame {
 	private JButton btnSelectAll;
 	private JButton btnUnselectAll;
 	private JButton btnAudit;
+	private JButton btnEnforce;
+	private JButton btnRestore;
 	private JTextField txtFilter;
 	private JScrollPane scrl;
 	private CustomItemModel itemsModel;
@@ -154,6 +155,24 @@ public class Main extends JFrame {
 			}
 		});
 		
+		toolBar.addSeparator();
+		btnEnforce = new JButton("Enforce");
+		toolBar.add(btnEnforce);
+		btnEnforce.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				enforce();
+			}
+		});
+
+		btnRestore = new JButton("Restore");
+		toolBar.add(btnRestore);
+		btnRestore.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				restore();
+			}
+		});
 		
 		itemsModel = new CustomItemModel(null);
 		itemsTable = new JTable(itemsModel);
@@ -295,6 +314,7 @@ public class Main extends JFrame {
 	
 	private void audit() {
 		ExecutorService svc = Executors.newFixedThreadPool(1);
+		Executer executer = new Executer();
 		for(int i = 0; i < itemsModel.getRowCount(); i++) {
 			CustomItem item = itemsModel.getItem(i);
 			final int idx = i;
@@ -303,11 +323,55 @@ public class Main extends JFrame {
 					@Override
 					public void run() {
 						itemsModel.setStatus(idx, "checking");
-						ExecutionResult result = Executer.check(item);
+						ExecutionResult result = executer.check(item);
 						itemsModel.setStatus(idx, result.getStatus());
 						itemsModel.setSystemValue(idx, result.getValue());
 					}
 				});
+			}
+		}
+	}
+	
+	private void enforce() {
+		ExecutorService svc = Executors.newFixedThreadPool(1);
+		Executer executer = new Executer();
+		for(int i = 0; i < itemsModel.getRowCount(); i++) {
+			CustomItem item = itemsModel.getItem(i);
+			final int idx = i;
+			if(item.isSelected() && "FAILED".equals(item.getStatus())) {
+				svc.execute(new Runnable() {
+					@Override
+					public void run() {
+						itemsModel.setStatus(idx, "enforcing");
+						ExecutionResult result = executer.enforce(item);
+						itemsModel.setStatus(idx, result.getStatus());
+						itemsModel.setSystemValue(idx, result.getValue());
+					}
+				});
+			}
+		}
+	}
+	
+	private void restore() {
+		fc.setDialogTitle("Choose backup file");
+		fc.setFileFilter(jsonFileFilter);
+		if(fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+			String fName = fc.getSelectedFile().getAbsolutePath();
+			Executer executer = new Executer();
+			try {
+				byte[] bytes = Files.readAllBytes(Paths.get(fName));
+				String content = new String(bytes);
+				JSONObject  json = new JSONObject(content);
+				JSONArray items = json.getJSONArray("items");
+				items.forEach(item -> {
+					JSONObject jsonItem = (JSONObject)item;
+					BackupItem bkp = new BackupItem(jsonItem);
+					executer.restore(bkp);
+				});
+				JOptionPane.showMessageDialog(this, "Restored Successfully", "Restore", JOptionPane.INFORMATION_MESSAGE);
+			} catch (Exception e1) {
+				JOptionPane.showMessageDialog(this, "Restore Failed: \n" + e1.getMessage(), "Restore", JOptionPane.ERROR_MESSAGE);
+				e1.printStackTrace();
 			}
 		}
 	}
@@ -320,7 +384,7 @@ public class Main extends JFrame {
 		
 		@Override
 		public boolean accept(File f) {
-			return f.getName().toLowerCase().endsWith(".json");
+			return f.isDirectory() || f.getName().toLowerCase().endsWith(".json");
 		}
 	};
 	
@@ -332,7 +396,7 @@ public class Main extends JFrame {
 		
 		@Override
 		public boolean accept(File f) {
-			return f.getName().toLowerCase().endsWith(".audit");
+			return f.isDirectory() || f.getName().toLowerCase().endsWith(".audit");
 		}
 	};
 	
