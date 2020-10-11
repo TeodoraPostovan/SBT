@@ -61,7 +61,7 @@ public class Main extends JFrame {
 		this.setTitle("Security Benchmarking Tool");
 		this.setSize(1450, 815);
 		this.setLayout(new BorderLayout(5, 5));
-		this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		fc.setCurrentDirectory(Paths.get("").toFile().getAbsoluteFile());
 		
 		toolBar = new JToolBar();
