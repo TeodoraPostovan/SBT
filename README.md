@@ -1,5 +1,13 @@
 # SBT - Security Benchmarking Tool
 
+## Note
+The "master" branch contains the latest version of the tool.
+There is a separate branch for each of the previous labs:
+- lab1
+- lab2
+- lab3
+- lab4
+
 ## Introduction
 A simple implementation of a Security Benchmarking Tool for Lab3.
 This version provides the following functionality:
@@ -19,10 +27,9 @@ This version provides the following functionality:
 11. Enforce the policy on the selected settings. Theoretically it should work for most of the settings of the "REGISTRY_SETTING" type. However, in order to avoid accidentally altering computer settings with undesired values, I have limited the tool to be able to enforce only the following settings:
 	- Access data sources across domains - Internet Zone
 	- Access data sources across domains - Restricted Sites Zone
-	- Allow Basic authentication - Client - AllowBasic
-	- Allow Basic authentication - Service - AllowBasic
 	- Allow META REFRESH
-	- Interactive logon: Smart card removal behavior
+	- Allow VBScript to run in Internet Explorer - Internet Zone
+	- Allow VBScript to run in Internet Explorer - Restricted Sites Zone
 12. Rollback to the system's initial settings.
 
 ## Technologies

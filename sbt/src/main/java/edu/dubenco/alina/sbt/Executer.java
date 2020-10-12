@@ -10,10 +10,10 @@ public class Executer {
 	private List<String> IMPLEMENTED_ITEMS = Arrays.asList(
 			"Access data sources across domains - Internet Zone", 
 			"Access data sources across domains - Restricted Sites Zone",
-			"Allow Basic authentication - Client - AllowBasic",
-			"Allow Basic authentication - Service - AllowBasic",
 			"Allow META REFRESH",
-			"Interactive logon: Smart card removal behavior"
+			"Allow VBScript to run in Internet Explorer - Internet Zone",
+			"Allow VBScript to run in Internet Explorer - Restricted Sites Zone",
+			"Allow active scripting"
 			);
 	
 	public Executer() {
